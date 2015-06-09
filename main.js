@@ -10,6 +10,7 @@ var enemys;
 var enemiesLeft = 10;
 var map;
 var bullets;
+var start;
 var fireButton;
 var fireSound;
 var explosion;
@@ -28,7 +29,7 @@ var emitter;
 var emitter2;
 
 function preload() {
-    game.load.image('sky', 'assets/sky.png');
+    game.load.image('background', 'assets/background.png');
     game.load.image('targ', 'assets/targ.png');
     game.load.image('bullet', 'assets/bullet2.png');
     game.load.image('wummel', 'assets/wummel.png');
@@ -57,6 +58,7 @@ function create() {
     fireButton.onDown.add(fireBullet, this);
     var re = game.input.keyboard.addKey(Phaser.Keyboard.ESC);
     re.onDown.add(restart, this);
+    start = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
 
     //sounds
     fireSound = game.add.audio('sound');
@@ -82,7 +84,7 @@ function create() {
 
     //world
     map = game.add.tilemap('map');
-    map.addTilesetImage('sky');
+    map.addTilesetImage('background');
 
     layer = map.createLayer('Tile Layer 1');
     layer.resizeWorld();
@@ -115,7 +117,7 @@ function create() {
 
 function initial() {
     // The player and its settings
-    player = game.add.sprite(34, game.world.height - 150, 'wummel');
+    player = game.add.sprite(40, game.world.height - 200, 'wummel');
     //    player.anchor.setTo(0.5, 0.5);
     player.scale.set(1.4, 1.6);
     game.physics.p2.enable(player);
@@ -123,13 +125,14 @@ function initial() {
     player.body.collides(enemyCollisionGroup, hitEnemy, this);
     player.body.collides(worldCollisionGroup);
     player.visible = true;
-       player.speed = 300; //jostain syystä tämän poiskommentointi piilottaa spriten?!?!
+    player.speed = 300; 
     //    player.body.mass = 0.1;
 
-    startText = game.add.sprite(100, 200, 'start');
+    startText = game.add.sprite(80, 200, 'start');
     startText.fixedToCamera = true;
 
     game.input.onDown.add(removeStart, this);
+    start.onDown.add(removeStart, this);
 
 }
 
@@ -151,14 +154,16 @@ function removeStart() {
 
 //go to start screen
 function restart() {
+    startText.destroy();
     score = 0;
     scoreText.text = 'Score: 0';
     player.destroy(); //ei voi poistaa koska muuten voittotilanteessa vanha jää näkyviin
-    fireSound.destroy = true; //ei toimi myöskään funktiona
+//   fireSound.destroy = true; 
 
     enemys.forEach(function (targ) {
         targ.kill();
     });
+    player.visible = true;
     enemiesLeft = 10;
     initial();
 }
@@ -220,14 +225,13 @@ function changeDirection(targ) {
 //body1 = vihollinen
 //body2 = luoti
 function enemyDies(body1, body2) {
-    if (body2.sprite == null) return;
     explosion.play();
     emitter.x = body1.x;
     emitter.y = body1.y;
     emitter.start(true, 500, null, 50);
 
     body1.sprite.destroy();
-    body2.sprite.destroy(); //välillä null?
+    if (body2.sprite != null) body2.sprite.destroy(); //välillä null?
 
     //  Add and update the score
     score += 10;
@@ -235,13 +239,13 @@ function enemyDies(body1, body2) {
     enemiesLeft--;
     if (enemiesLeft <= 0) {
         applause.play();
+        player.destroy();
         console.log("You won!");
         restart();
     }
 }
 
-
-//the enemy hit the player and set it invisivle
+//the enemy hit the player and set it invisible
 function hitEnemy() {
     explosion.play();
     player.visible = false;
@@ -251,9 +255,9 @@ function hitEnemy() {
 function fireBullet() {
     fireSound.play();
     var bullet = game.add.sprite(player.body.x, player.body.y, 'bullet');
+    game.physics.p2.enable(bullet);
     bullet.enableBody = true;
     bullet.mass = 0.1;
-    game.physics.p2.enable(bullet);
     bullet.body.velocity.x = -200 * player.body.velocity.x;
     bullet.body.velocity.y = -200 * player.body.velocity.y;
 
